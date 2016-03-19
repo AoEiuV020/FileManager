@@ -1,0 +1,16 @@
+#!/bin/sh
+#	***************************************************
+#		^> File Name: rm
+#		^> Author: AoEiuV020
+#		^> Mail: 490674483@qq.com
+#		^> Created Time: 2016/04/24 - 03:58:08
+#	***************************************************
+if [ "x$1" == "x" ]
+then
+	exit 0;
+fi
+git filter-branch --force --index-filter "git rm -rf --cached --ignore-unmatch $1" --prune-empty --tag-name-filter cat -- --all
+git log --pretty=oneline --branches -- $1
+git reflog expire --expire=now --all
+git gc --prune=now
+git gc --aggressive --prune=now
