@@ -104,6 +104,25 @@ public class SimpleDialog implements DialogInterface.OnClickListener,DialogInter
 			throw new RuntimeException("");
 		}
 	}
+	public static AlertDialog show(String title,View view)
+	{
+		SimpleDialog simpleDialog=new SimpleDialog();
+		Status status=new Status(simpleDialog);
+		return show(title,view,status,simpleDialog);
+	}
+	private static AlertDialog show(String title,View view,Status status,SimpleDialog simpleDialog)
+	{
+		Context context=view.getContext();
+		simpleDialog.status=status;
+		AlertDialog.Builder builder=new AlertDialog.Builder(context);
+		builder.setIcon(android.R.drawable.ic_dialog_info);
+		builder.setTitle(title);
+		builder.setView(view);
+		builder.setOnCancelListener(simpleDialog);
+		AlertDialog dialog=builder.create();
+		dialog.show();
+		return dialog;
+	}
 	public static boolean show(Context context,String title,String message)
 	{
 		SimpleDialog simpleDialog=new SimpleDialog();
@@ -129,8 +148,10 @@ public class SimpleDialog implements DialogInterface.OnClickListener,DialogInter
 		simpleDialog.status=status;
 		AlertDialog.Builder builder=new AlertDialog.Builder(context);
 		builder.setIcon(android.R.drawable.ic_dialog_info);
-		builder.setTitle(title);
-		builder.setMessage(message);
+		if(title!=null)
+			builder.setTitle(title);
+		if(message!=null)
+			builder.setMessage(message);
 		builder.setPositiveButton("OK",simpleDialog);
 		builder.setOnCancelListener(simpleDialog);
 		AlertDialog dialog=builder.create();

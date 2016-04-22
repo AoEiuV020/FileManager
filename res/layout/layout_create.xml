@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	>
+	<EditText
+		android:id="@+id/create_name"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:singleLine="true"
+		android:hint="文件名"
+		/>
+	<Button
+		android:id="@+id/create_file"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:text="创建文件"
+		/>
+	<Button
+		android:id="@+id/create_folder"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:text="创建文件夹"
+		/>
+</LinearLayout>
+

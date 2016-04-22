@@ -12,9 +12,19 @@
 		>
 		<TextView
 			android:layout_width="fill_parent"
+			android:layout_weight="1"
 			android:layout_height="wrap_content"
 			android:gravity="center"
 			android:text="@string/app_name"
+			/>
+		<ImageView
+			android:id="@+id/quit"
+			android:layout_width="fill_parent"
+			android:layout_weight="1"
+			android:layout_height="wrap_content"
+			android:layout_gravity="start|center_vertical"
+			android:scaleType="fitCenter"
+			android:src="@android:drawable/ic_lock_power_off"
 			/>
 	</LinearLayout>
 	<ListView
@@ -31,29 +41,49 @@
 		android:layout_height="50dp"
 		>
 		<ImageView
+			android:id="@+id/create"
 			android:layout_width="fill_parent"
+			android:layout_weight="1"
 			android:layout_height="fill_parent"
 			android:layout_gravity="start|center_vertical"
 			android:scaleType="fitCenter"
-			android:src="@android:drawable/ic_input_add"
+			android:src="@android:drawable/ic_menu_add"
 			/>
 		<ImageView
+			android:id="@+id/copy"
 			android:layout_width="fill_parent"
+			android:layout_weight="1"
 			android:layout_height="fill_parent"
 			android:layout_gravity="start|center_vertical"
 			android:scaleType="fitCenter"
+			android:src="@+drawable/toolbar_edit_copy"
 			/>
 		<ImageView
+			android:id="@+id/moveto"
 			android:layout_width="fill_parent"
+			android:layout_weight="1"
 			android:layout_height="fill_parent"
 			android:layout_gravity="start|center_vertical"
 			android:scaleType="fitCenter"
+			android:src="@+drawable/toolbar_edit_moveto"
 			/>
 		<ImageView
+			android:id="@+id/paste"
 			android:layout_width="fill_parent"
+			android:layout_weight="1"
 			android:layout_height="fill_parent"
 			android:layout_gravity="start|center_vertical"
 			android:scaleType="fitCenter"
+			android:src="@+drawable/toolbar_edit_copyto"
+			/>
+		<ImageView
+			android:id="@+id/delete"
+			android:layout_width="fill_parent"
+			android:layout_weight="1"
+			android:layout_height="fill_parent"
+			android:layout_gravity="start|center_vertical"
+			android:scaleType="fitCenter"
+			android:src="@android:drawable/ic_menu_delete"
 			/>
 	</LinearLayout>
 </LinearLayout>

@@ -15,16 +15,33 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 class ItemAdapter extends BaseAdapter
 {
-	List<Item> mList=null;
+	private final List<Item> mList=new LinkedList<Item>();
 	private Context mContext=null;
 	private LayoutInflater mInflater=null;
 	private Comparator mComparator=MyComparator.NameASC;
 	private static final FilenameFilter filter=new MyFilenameFilter();
 	public ItemAdapter(Context context)
 	{
-		mList=new LinkedList<Item>();
 		mContext=context;
 		mInflater=LayoutInflater.from(context);
+	}
+	public void clearSelection()
+	{
+		for(Item item:mList)
+		{
+			item.selected=false;
+		}
+		notifyDataSetChanged();
+	}
+	public List<File> getSelectedFiles()
+	{
+		List<File> files=new LinkedList<File>();
+		for(Item item:mList)
+		{
+			if(item.selected)
+				files.add(item.file);
+		}
+		return files;
 	}
 	public void set(File file)
 	{
@@ -33,13 +50,19 @@ class ItemAdapter extends BaseAdapter
 		Collections.sort(mList,mComparator);
 		notifyDataSetChanged();
 	}
-	private void add(File file)
+	public void add(File file)
+	{
+		add(file,false);
+	}
+	public void add(File file,boolean flush)
 	{
 		Item item=new Item();
 		item.file=file;
 		mList.add(item);
+		if(flush)
+			notifyDataSetChanged();
 	}
-	private void addAll(File[] list)
+	public void addAll(File[] list)
 	{
 		if(list==null||list.length==0)
 			return;
@@ -47,6 +70,7 @@ class ItemAdapter extends BaseAdapter
 		{
 			add(file);
 		}
+		notifyDataSetChanged();
 	}
 	public void addAll(Collection<File> list)
 	{
