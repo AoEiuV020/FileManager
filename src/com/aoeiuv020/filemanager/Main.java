@@ -37,13 +37,14 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
 		tvTitlePath=(TextView)findViewById(R.id.title_path);
-		findViewById(R.id.create).setOnClickListener(this);
-		findViewById(R.id.copy).setOnClickListener(this);
-		findViewById(R.id.moveto).setOnClickListener(this);
-		findViewById(R.id.paste).setOnClickListener(this);
-		findViewById(R.id.delete).setOnClickListener(this);
-		findViewById(R.id.sort).setOnClickListener(this);
-		findViewById(R.id.quit).setOnClickListener(this);
+		ViewGroup toolbar=(ViewGroup)findViewById(R.id.toolbar);
+		int toolCount=toolbar.getChildCount();
+		for(int i=0;i<toolCount;++i)
+		{
+			ViewGroup tool=(ViewGroup)toolbar.getChildAt(i);
+			View image=tool.getChildAt(0);
+			image.setOnClickListener(this);
+		}
 		lvFileList=(ListView)findViewById(R.id.filelist);
 		LayoutInflater inflater=LayoutInflater.from(this);
 		View parent=inflater.inflate(R.layout.layout_parent,null);
