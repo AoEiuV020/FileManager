@@ -116,8 +116,10 @@ public class SimpleDialog implements DialogInterface.OnClickListener,DialogInter
 		simpleDialog.status=status;
 		AlertDialog.Builder builder=new AlertDialog.Builder(context);
 		builder.setIcon(android.R.drawable.ic_dialog_info);
-		builder.setTitle(title);
-		builder.setView(view);
+		if(title!=null)
+			builder.setTitle(title);
+		if(view!=null)
+			builder.setView(view);
 		builder.setOnCancelListener(simpleDialog);
 		AlertDialog dialog=builder.create();
 		dialog.show();

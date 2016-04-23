@@ -20,7 +20,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 
 
-public class Main extends Activity implements AdapterView.OnItemClickListener,View.OnClickListener
+public class Main extends Activity implements AdapterView.OnItemClickListener,View.OnClickListener,AdapterView.OnItemLongClickListener
 {
 	private final String TAG=""+this;
 	private ListView lvFileList=null;
@@ -28,6 +28,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 	private Map<File,Integer> mPosition=new HashMap<File,Integer>();
 	private Deque<List<File>> mClipper=new LinkedList<List<File>>();
 	private ItemAdapter mAdapter=null;
+	private TextView tvTitlePath=null;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -35,11 +36,13 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main);
+		tvTitlePath=(TextView)findViewById(R.id.title_path);
 		findViewById(R.id.create).setOnClickListener(this);
 		findViewById(R.id.copy).setOnClickListener(this);
 		findViewById(R.id.moveto).setOnClickListener(this);
 		findViewById(R.id.paste).setOnClickListener(this);
 		findViewById(R.id.delete).setOnClickListener(this);
+		findViewById(R.id.sort).setOnClickListener(this);
 		findViewById(R.id.quit).setOnClickListener(this);
 		lvFileList=(ListView)findViewById(R.id.filelist);
 		LayoutInflater inflater=LayoutInflater.from(this);
@@ -56,13 +59,57 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		mAdapter=new ItemAdapter(this);
 		lvFileList.setAdapter(mAdapter);
 		lvFileList.setOnItemClickListener(this);
+		lvFileList.setOnItemLongClickListener(this);
 		flush();
     }
 	@Override
-	public void onClick(View actionButton)
+	public void onClick(final View actionButton)
 	{
 		switch(actionButton.getId())
 		{
+			case R.id.sort:
+				LayoutInflater inflater=LayoutInflater.from(this);
+				View view=inflater.inflate(R.layout.layout_sort,null);
+				final Dialog dialog=SimpleDialog.show("排序",view);
+				View.OnClickListener listener=new View.OnClickListener(){
+					@Override
+					public void onClick(View view)
+					{
+						ImageView sortImageView=(ImageView)view.findViewById(R.id.sort_image);
+						ImageView actionImageView=(ImageView)actionButton;
+						actionImageView.setImageDrawable(sortImageView.getDrawable());
+						switch(view.getId())
+						{
+							case R.id.name_asc:
+								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.NameASC);
+								break;
+							case R.id.name_desc:
+								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.NameDESC);
+								break;
+							case R.id.size_asc:
+								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.SizeASC);
+								break;
+							case R.id.size_desc:
+								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.SizeDESC);
+								break;
+							case R.id.time_asc:
+								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.TimeASC);
+								break;
+							case R.id.time_desc:
+								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.TimeDESC);
+								break;
+						}
+						dialog.cancel();
+						Main.this.flush();
+					}
+				};
+				view.findViewById(R.id.name_asc).setOnClickListener(listener);
+				view.findViewById(R.id.name_desc).setOnClickListener(listener);
+				view.findViewById(R.id.size_asc).setOnClickListener(listener);
+				view.findViewById(R.id.size_desc).setOnClickListener(listener);
+				view.findViewById(R.id.time_asc).setOnClickListener(listener);
+				view.findViewById(R.id.time_desc).setOnClickListener(listener);
+				break;
 			case R.id.create:
 				Main.this.doCreate();
 				break;
@@ -209,9 +256,11 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 	}
 	public void flush()
 	{
-		mAdapter.set(mFilesStack.peek());
+		File file=mFilesStack.peek();
+		mAdapter.set(file);
 		Integer position=mPosition.get(mFilesStack.peek());
-		Logger.v("Map Position size=%d position=%s",mPosition.size(),""+position);
+		Logger.v("file=%s size=%d position=%s",file,mPosition.size(),""+position);
+		tvTitlePath.setText(""+file.getAbsolutePath());
 		if(position!=null)
 		{
 			lvFileList.setSelection(position);
@@ -225,9 +274,9 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		flush();
 	}
 	/**
-	  * 只剩一个就不pop，
-	  * 而是返回false，
-	  */
+	 * 只剩一个就不pop，
+	 * 而是返回false，
+	 */
 	public boolean back()
 	{
 		if(mFilesStack.size()==1)
@@ -238,8 +287,29 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 	}
 	public void backParent()
 	{
-		File parent=mFilesStack.peek().getParentFile();
+		File parent=FileOperator.getParentFile(mFilesStack.peek());
 		enter(parent);
+	}
+	@Override
+	public boolean onItemLongClick(AdapterView<?> parent,View view,int position,long id)
+	{
+		ItemAdapter.Item item=(ItemAdapter.Item)parent.getAdapter().getItem(position);
+		File file=item.file;
+		Logger.v("onItemLongClick %d,%s",position,file.getPath());
+		if(file==null)
+		{
+			//不可到达,
+			Logger.e(new Exception("Item"+item+"里没file"));
+		}
+		else if(file.isDirectory())
+		{
+			return false;
+		}
+		else
+		{
+			openAs(file);
+		}
+		return true;
 	}
 	@Override
 	public void onItemClick(AdapterView<?> parent,View view,int position,long id)
@@ -252,30 +322,58 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 			//不可到达,
 			Logger.e(new Exception("Item"+item+"里没file"));
 		}
-		if(file.isDirectory())
+		else if(file.isDirectory())
 		{
 			enter(file);
 		}
 		else
 		{
-			Intent intent=new Intent();
-			intent.setAction(Intent.ACTION_VIEW);
-			String extension=file.getName();
-			int lastDot=extension.lastIndexOf('.');
-			if(lastDot!=-1)
+			open(file);
+		}
+	}
+	private void openAs(final File file)
+	{
+		LayoutInflater inflater=LayoutInflater.from(this);
+		View view=inflater.inflate(R.layout.layout_openas,null);
+		final Dialog dialog=SimpleDialog.show("打开为",view);
+		final EditText edExtension=(EditText)view.findViewById(R.id.openas_extension);
+		View.OnClickListener listener=new View.OnClickListener(){
+			@Override
+			public void onClick(View view)
 			{
-				extension=extension.substring(lastDot+1);
+				switch(view.getId())
+				{
+					case R.id.openas_open:
+						String extension=""+edExtension.getText();
+						Main.this.open(file,extension);
+						break;
+				}
+				dialog.cancel();
 			}
-			String type=MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-			intent.setDataAndType(Uri.fromFile(file),type);
-			try
-			{
-				startActivity(intent);
-			}
-			catch(ActivityNotFoundException e)
-			{
-				SimpleToast.makeText(this,String.format("没有应用可以打开文件%s,后辍%s,类型%s",file.getName(),extension,type));
-			}
+		};
+		view.findViewById(R.id.openas_open).setOnClickListener(listener);
+	}
+	private void open(File file)
+	{
+		open(file,null);
+	}
+	private void open(File file,String extension)
+	{
+		Intent intent=new Intent();
+		intent.setAction(Intent.ACTION_VIEW);
+		if(extension==null||extension.equals(""))
+		{
+			extension=FileOperator.getExtension(file.getName());
+		}
+		String type=MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+		intent.setDataAndType(Uri.fromFile(file),type);
+		try
+		{
+			startActivity(intent);
+		}
+		catch(ActivityNotFoundException e)
+		{
+			SimpleToast.makeText(this,String.format("没有应用可以打开文件%s,后辍%s,类型%s",file.getName(),extension,type));
 		}
 	}
 	private long lastTime=0;

@@ -8,6 +8,76 @@ package com.aoeiuv020.tool;
 import java.io.*;
 public class FileOperator
 {
+	public static File getParentFile(File file)
+	{
+		File parent=file.getParentFile();
+		if(parent==null)
+		{
+			//恶心的方法，居然会返回null，又没有别的可替代，
+			parent=new File(file.getAbsolutePath()).getParentFile();
+			//这个parent不会再null，除非file是根目录，
+		}
+		return parent;
+	}
+	public static String getExtension(String fileName)
+	{
+		String extension="";
+		int lastDot=fileName.lastIndexOf('.');
+		if(lastDot!=-1)
+		{
+			extension=fileName.substring(lastDot+1);
+		}
+		return extension;
+	}
+	public static long getLengthLong(File file)
+	{
+		if(file==null)
+			return 0;
+		long length=0;
+		if(file.isDirectory())
+		{
+			File[] subFiles=file.listFiles();
+			if(subFiles==null)
+				length=0;
+			else
+				length=subFiles.length;
+		}
+		else
+		{
+			length=file.length();
+		}
+		return length;
+	}
+	public static String getLengthString(File file)
+	{
+		if(file==null)
+			return "0B";
+		StringBuffer sbuf=new StringBuffer();
+		double length=file.length();
+		int c=0;
+		while(length>1024)
+		{
+			length/=1024;
+			++c;
+		}
+		sbuf.append(String.format("%.02f",length));
+		switch(c)
+		{
+			case 0:
+				sbuf.append("B");
+				break;
+			case 1:
+				sbuf.append("KB");
+				break;
+			case 2:
+				sbuf.append("MB");
+				break;
+			default:
+				sbuf.append("GB");
+				break;
+		}
+		return sbuf.toString();
+	}
 	public static File delete(File file,DeleteListener listener)
 	{
 		if(file.isDirectory())
@@ -52,13 +122,7 @@ public class FileOperator
 			return file;
 		if(!newFile.exists())
 		{
-			File parent=newFile.getParentFile();
-			if(parent==null)
-			{
-				//恶心的方法，居然会返回null，又没有别的可替代，
-				parent=new File(newFile.getAbsolutePath()).getParentFile();
-				//这个parent不会再null，因为不存在的newFile不可能是根目录，
-			}
+			File parent=getParentFile(newFile);
 			if(!parent.exists()&&!parent.mkdirs())
 				return file;
 		}

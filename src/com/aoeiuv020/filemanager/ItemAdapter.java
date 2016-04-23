@@ -6,7 +6,10 @@
 *************************************************** */
 package com.aoeiuv020.filemanager;
 import com.aoeiuv020.tool.Logger;
+import com.aoeiuv020.tool.FileOperator;
 import android.widget.*;
+import android.graphics.drawable.Drawable;
+import android.content.pm.*;
 import android.content.*;
 import android.view.*;
 import android.os.*;
@@ -18,12 +21,16 @@ class ItemAdapter extends BaseAdapter
 	private final List<Item> mList=new LinkedList<Item>();
 	private Context mContext=null;
 	private LayoutInflater mInflater=null;
-	private Comparator mComparator=MyComparator.NameASC;
+	private Comparator mComparator=FileComparator.NameASC;
 	private static final FilenameFilter filter=new MyFilenameFilter();
 	public ItemAdapter(Context context)
 	{
 		mContext=context;
 		mInflater=LayoutInflater.from(context);
+	}
+	public void setComparator(Comparator comparator)
+	{
+		mComparator=comparator;
 	}
 	public void clearSelection()
 	{
@@ -118,7 +125,7 @@ class ItemAdapter extends BaseAdapter
 		holder.set(item);
 		return view;
 	}
-	public static class MyComparator
+	public static class FileComparator
 	{
 		public static final Comparator<Item> NameASC=new NameComparator(){
 				@Override
@@ -134,10 +141,80 @@ class ItemAdapter extends BaseAdapter
 					return -nameA.compareTo(nameB);
 				}
 			};
-		public static final Comparator<Item> TimeASC=null;
-		public static final Comparator<Item> TimeDESC=null;
-		public static final Comparator<Item> SizeASC=null;
-		public static final Comparator<Item> SizeDESC=null;
+		public static final Comparator<Item> SizeASC=new SizeComparator(){
+				@Override
+				public int compare(Long lengthA,Long lengthB)
+				{
+					return lengthA.compareTo(lengthB);
+				}
+			};
+		public static final Comparator<Item> SizeDESC=new SizeComparator(){
+				@Override
+				public int compare(Long lengthA,Long lengthB)
+				{
+					return -lengthA.compareTo(lengthB);
+				}
+			};
+		public static final Comparator<Item> TimeASC=new TimeComparator(){
+				@Override
+				public int compare(Long timeA,Long timeB)
+				{
+					return timeA.compareTo(timeB);
+				}
+			};
+		public static final Comparator<Item> TimeDESC=new TimeComparator(){
+				@Override
+				public int compare(Long timeA,Long timeB)
+				{
+					return -timeA.compareTo(timeB);
+				}
+			};
+		private static abstract class TimeComparator implements Comparator<Item>
+		{
+			@Override
+			public int compare(Item a,Item b)
+			{
+				if(a.file==b.file)
+					return 0;
+				if(a.file.isDirectory()&&!b.file.isDirectory())
+					return Integer.MIN_VALUE;
+				if(!a.file.isDirectory()&&b.file.isDirectory())
+					return Integer.MAX_VALUE;
+				long timeA=0,timeB=0;
+				timeA=getTime(a.file);
+				timeB=getTime(b.file);
+				return compare(timeA,timeB);
+			}
+			private long getTime(File file)
+			{
+				if(file==null)
+					return 0;
+				return file.lastModified();
+			}
+			public abstract int compare(Long timeA,Long timeB);
+		}
+		private static abstract class SizeComparator implements Comparator<Item>
+		{
+			@Override
+			public int compare(Item a,Item b)
+			{
+				if(a.file==b.file)
+					return 0;
+				if(a.file.isDirectory()&&!b.file.isDirectory())
+					return Integer.MIN_VALUE;
+				if(!a.file.isDirectory()&&b.file.isDirectory())
+					return Integer.MAX_VALUE;
+				long lengthA=0,lengthB=0;
+				lengthA=getLength(a.file);
+				lengthB=getLength(b.file);
+				return compare(lengthA,lengthB);
+			}
+			private long getLength(File file)
+			{
+				return FileOperator.getLengthLong(file);
+			}
+			public abstract int compare(Long lengthA,Long lengthB);
+		}
 		private static abstract class NameComparator implements Comparator<Item>
 		{
 			@Override
@@ -166,7 +243,7 @@ class ItemAdapter extends BaseAdapter
 		@Override
 		public int compareTo(Item item)
 		{
-			return MyComparator.NameASC.compare(this,item);
+			return FileComparator.NameASC.compare(this,item);
 		}
 		@Override
 		public String toString()
@@ -177,7 +254,7 @@ class ItemAdapter extends BaseAdapter
 	public static class ViewHolder
 	{
 		private static final int ICON_FOLDER=R.drawable.format_folder;
-		private static final int ICON_FILE=R.drawable.format_unknown;
+		private static final int ICON_FILE_UNKNOWN=R.drawable.format_unknown;
 		private static final SimpleDateFormat sdformat=new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss");
 		public ImageView image=null;
 		public TextView name=null;
@@ -189,17 +266,53 @@ class ItemAdapter extends BaseAdapter
 		{
 			return inflater.inflate(R.layout.layout_item,null);
 		}
+		public static Drawable getApkIcon(Context context, String apkPath) {
+			//网上复制的方法，
+			PackageManager pm = context.getPackageManager();
+			PackageInfo info = pm.getPackageArchiveInfo(apkPath,
+					PackageManager.GET_ACTIVITIES);
+			if (info != null) {
+				ApplicationInfo appInfo = info.applicationInfo;
+				appInfo.sourceDir = apkPath;
+				appInfo.publicSourceDir = apkPath;
+				try {
+					return appInfo.loadIcon(pm);
+				} catch (OutOfMemoryError e) {
+					Logger.e(e);
+				}
+			}
+			return null;
+		}
+		public void setIcon(ImageView imageView,File file)
+		{
+			if(file.isDirectory())
+				image.setImageResource(ICON_FOLDER);
+			else
+			{
+				String extension=FileOperator.getExtension(file.getName());
+				if("apk".equals(extension))
+				{
+					Drawable icon=getApkIcon(imageView.getContext(),file.getAbsolutePath());
+					if(icon==null)
+						image.setImageResource(ICON_FILE_UNKNOWN);
+					else
+						image.setImageDrawable(icon);
+				}
+				else
+					image.setImageResource(ICON_FILE_UNKNOWN);
+			}
+		}
 		public void set(Item item)
 		{
 			if(item==null||item.file==null)
 				return;
 			File file=item.file;
-			int resId=ICON_FILE;
-			if(file.isDirectory())
-				resId=ICON_FOLDER;
-			image.setImageResource(resId);
+			setIcon(image,file);
 			name.setText(""+file.getName());
-			size.setText(""+file.length());
+			if(file.isDirectory())
+				size.setText(""+FileOperator.getLengthLong(file));
+			else
+				size.setText(""+FileOperator.getLengthString(file));
 			permission.setText(""+(file.isDirectory()?"d":"-")+(file.canRead()?"r":"-")+(file.canWrite()?"w":"-")+(file.canExecute()?"x":"-"));
 			time.setText(""+sdformat.format(new Date(file.lastModified())));
 			Logger.v("ViewHolder set %s",item);
