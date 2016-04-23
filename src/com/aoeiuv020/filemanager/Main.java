@@ -76,9 +76,6 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 					@Override
 					public void onClick(View view)
 					{
-						ImageView sortImageView=(ImageView)view.findViewById(R.id.sort_image);
-						ImageView actionImageView=(ImageView)actionButton;
-						actionImageView.setImageDrawable(sortImageView.getDrawable());
 						switch(view.getId())
 						{
 							case R.id.name_asc:
@@ -102,6 +99,9 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 						}
 						dialog.cancel();
 						Main.this.flush();
+						ImageView sortImageView=(ImageView)((ViewGroup)view).getChildAt(0);
+						ImageView actionImageView=(ImageView)actionButton;
+						actionImageView.setImageDrawable(sortImageView.getDrawable());
 					}
 				};
 				view.findViewById(R.id.name_asc).setOnClickListener(listener);
