@@ -232,9 +232,14 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 	 */
 	public void doDelete()
 	{
+		List<File> files=mAdapter.getSelectedFiles();
+		if(files.size()==0)
+		{
+			SimpleToast.makeText(this,"还没选择要删除的文件");
+			return;
+		}
 		if(!SimpleDialog.show(this,"确认全部删除?","我只说一次，\n包括文件夹的里的所有文件"))
 			return;
-		List<File> files=mAdapter.getSelectedFiles();
 		List<File> deleteErrorFiles=new LinkedList<File>();
 		for(File file:files)
 		{
