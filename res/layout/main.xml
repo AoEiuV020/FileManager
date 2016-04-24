@@ -52,8 +52,10 @@
 	<HorizontalScrollView
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
+		android:fillViewport="true"
 		>
 		<LinearLayout
+			android:id="@+id/toolbar"
 			android:orientation="horizontal"
 			android:layout_width="fill_parent"
 			android:layout_height="wrap_content"
@@ -195,6 +197,29 @@
 					android:gravity="center"
 					android:textSize="8sp"
 					android:text="排序"
+					/>
+			</LinearLayout>
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="40dp"
+				android:layout_height="wrap_content"
+				android:gravity="center"
+				>
+				<ImageView
+					android:id="@+id/rename"
+					android:layout_width="40dp"
+					android:layout_height="40dp"
+					android:layout_gravity="start|center_vertical"
+					android:scaleType="fitCenter"
+					android:src="@drawable/toolbar_edit_rename"
+					android:background="@drawable/imageview_background"
+					/>
+				<TextView
+					android:layout_width="40dp"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:textSize="8sp"
+					android:text="重命名"
 					/>
 			</LinearLayout>
 		</LinearLayout>

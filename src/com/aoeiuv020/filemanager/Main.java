@@ -9,6 +9,7 @@ import android.app.Dialog;
 import android.os.*;
 import android.widget.*;
 import android.view.*;
+import android.view.inputmethod.InputMethodManager;
 import android.net.*;
 import android.content.*;
 import android.util.Log;
@@ -63,116 +64,183 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		lvFileList.setOnItemLongClickListener(this);
 		flush();
     }
-	@Override
-	public void onClick(final View actionButton)
+	private void rename()
 	{
-		switch(actionButton.getId())
+		List<File> selectedFiles=mAdapter.getSelectedFiles();
+		int selectedCount=selectedFiles.size();
+		if(selectedCount>0)
 		{
-			case R.id.sort:
-				LayoutInflater inflater=LayoutInflater.from(this);
-				View view=inflater.inflate(R.layout.layout_sort,null);
-				final Dialog dialog=SimpleDialog.show("排序",view);
+			LayoutInflater inflater=LayoutInflater.from(this);
+			for(final File file:selectedFiles)
+			{
+				View view=inflater.inflate(R.layout.layout_rename,null);
+				final EditText edName=(EditText)view.findViewById(R.id.rename_name);
+				edName.setText(file.getName());
+				SimpleDialog.Status status=new SimpleDialog.Status();
+				final Dialog dialog=SimpleDialog.show("重命名",view,status);
+				//显示软键盘，下面三行，
+				InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+				imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
+				dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 				View.OnClickListener listener=new View.OnClickListener(){
 					@Override
 					public void onClick(View view)
 					{
 						switch(view.getId())
 						{
-							case R.id.name_asc:
-								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.NameASC);
-								break;
-							case R.id.name_desc:
-								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.NameDESC);
-								break;
-							case R.id.size_asc:
-								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.SizeASC);
-								break;
-							case R.id.size_desc:
-								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.SizeDESC);
-								break;
-							case R.id.time_asc:
-								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.TimeASC);
-								break;
-							case R.id.time_desc:
-								Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.TimeDESC);
+							//只有这一个按钮，
+							case R.id.rename_set:
+								String name=""+edName.getText();
+								FileOperator.rename(file,name);
 								break;
 						}
 						dialog.cancel();
-						Main.this.flush();
-						ImageView sortImageView=(ImageView)((ViewGroup)view).getChildAt(0);
-						ImageView actionImageView=(ImageView)actionButton;
-						actionImageView.setImageDrawable(sortImageView.getDrawable());
 					}
 				};
-				view.findViewById(R.id.name_asc).setOnClickListener(listener);
-				view.findViewById(R.id.name_desc).setOnClickListener(listener);
-				view.findViewById(R.id.size_asc).setOnClickListener(listener);
-				view.findViewById(R.id.size_desc).setOnClickListener(listener);
-				view.findViewById(R.id.time_asc).setOnClickListener(listener);
-				view.findViewById(R.id.time_desc).setOnClickListener(listener);
+				view.findViewById(R.id.rename_set).setOnClickListener(listener);
+				//阻塞，等对话框结束，
+				status.getStatus();
+			}
+			mAdapter.clearSelection();
+			Main.this.flush();
+		}
+		else
+			SimpleToast.makeText(this,"没选择不能重命名");
+	}
+	/**
+	 * 设置完排序方法后，还要改排序按钮的图标，
+	 * @param actionButton 按钮传进来是为了改图标，
+	 */
+	private void sort(final View actionButton)
+	{
+		LayoutInflater inflater=LayoutInflater.from(this);
+		View view=inflater.inflate(R.layout.layout_sort,null);
+		final Dialog dialog=SimpleDialog.show("排序",view);
+		View.OnClickListener listener=new View.OnClickListener(){
+			@Override
+			public void onClick(View view)
+			{
+				switch(view.getId())
+				{
+					case R.id.name_asc:
+						Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.NameASC);
+						break;
+					case R.id.name_desc:
+						Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.NameDESC);
+						break;
+					case R.id.size_asc:
+						Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.SizeASC);
+						break;
+					case R.id.size_desc:
+						Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.SizeDESC);
+						break;
+					case R.id.time_asc:
+						Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.TimeASC);
+						break;
+					case R.id.time_desc:
+						Main.this.mAdapter.setComparator(ItemAdapter.FileComparator.TimeDESC);
+						break;
+					default:
+				}
+				dialog.cancel();
+				Main.this.flush();
+				ImageView sortImageView=(ImageView)((ViewGroup)view).getChildAt(0);
+				ImageView actionImageView=(ImageView)actionButton;
+				actionImageView.setImageDrawable(sortImageView.getDrawable());
+			}
+		};
+		view.findViewById(R.id.name_asc).setOnClickListener(listener);
+		view.findViewById(R.id.name_desc).setOnClickListener(listener);
+		view.findViewById(R.id.size_asc).setOnClickListener(listener);
+		view.findViewById(R.id.size_desc).setOnClickListener(listener);
+		view.findViewById(R.id.time_asc).setOnClickListener(listener);
+		view.findViewById(R.id.time_desc).setOnClickListener(listener);
+	}
+	private void copy()
+	{
+		List<File> selectedFiles=mAdapter.getSelectedFiles();
+		int selectedCount=selectedFiles.size();
+		if(selectedCount>0)
+		{
+			mClipper.push(selectedFiles);
+			mAdapter.clearSelection();
+			SimpleToast.makeText(this,"复制"+selectedCount+"项");
+		}
+		else
+			SimpleToast.makeText(this,"没选择不能复制");
+	}
+	private void paste()
+	{
+		try
+		{
+			List<File> clipperFiles=mClipper.pop();
+			StringBuffer sbuf=new StringBuffer();
+			for(File file:clipperFiles)
+			{
+				File newFile=new File(mFilesStack.peek(),file.getName());
+				File result=FileOperator.copy(file,newFile,null);
+				if(result!=null)
+					sbuf.append(result.getAbsolutePath()+"\n");
+			}
+			if(sbuf.length()>0)
+				SimpleToast.makeText(this,sbuf.toString()+"这些文件复制失败");
+		}
+		catch(NoSuchElementException e)
+		{
+			SimpleToast.makeText(this,"还没复制不能粘贴");
+		}
+		flush();
+	}
+	private void moveTo()
+	{
+		try
+		{
+			List<File> files=mClipper.pop();
+			StringBuffer sbuf=new StringBuffer();
+			for(File file:files)
+			{
+				File newFile=new File(mFilesStack.peek(),file.getName());
+				File result=FileOperator.rename(file,newFile);
+				if(result!=null)
+					sbuf.append(file.getAbsolutePath()+"\n");
+			}
+			if(sbuf.length()>0)
+				SimpleToast.makeText(this,sbuf.toString()+"这些文件移动失败");
+		}
+		catch(NoSuchElementException e)
+		{
+			SimpleToast.makeText(this,"还没复制不能粘贴");
+		}
+		flush();
+	}
+	@Override
+	public void onClick(final View actionButton)
+	{
+		switch(actionButton.getId())
+		{
+			case R.id.rename:
+				rename();
+				break;
+			case R.id.sort:
+				sort(actionButton);
 				break;
 			case R.id.create:
-				Main.this.doCreate();
+				doCreate();
 				break;
 			case R.id.delete:
-				Main.this.doDelete();
+				doDelete();
 				break;
 			case R.id.quit:
 				finish();
 				break;
 			case R.id.copy:
-				List<File> selectedFiles=mAdapter.getSelectedFiles();
-				int selectedCount=selectedFiles.size();
-				if(selectedCount>0)
-				{
-					mClipper.push(selectedFiles);
-					mAdapter.clearSelection();
-					SimpleToast.makeText(this,"复制"+selectedCount+"项");
-				}
-				else
-					SimpleToast.makeText(this,"没选择不能复制");
+				copy();
 				break;
 			case R.id.paste:
-				try
-				{
-					List<File> clipperFiles=mClipper.pop();
-					StringBuffer sbuf=new StringBuffer();
-					for(File file:clipperFiles)
-					{
-						File newFile=new File(mFilesStack.peek(),file.getName());
-						File result=FileOperator.copy(file,newFile,null);
-						if(result!=null)
-							sbuf.append(result.getAbsolutePath()+"\n");
-					}
-					if(sbuf.length()>0)
-						SimpleToast.makeText(this,sbuf.toString()+"这些文件复制失败");
-				}
-				catch(NoSuchElementException e)
-				{
-					SimpleToast.makeText(this,"还没复制不能粘贴");
-				}
-				flush();
+				paste();
 				break;
 			case R.id.moveto:
-				try
-				{
-					List<File> files=mClipper.pop();
-					StringBuffer sbuf=new StringBuffer();
-					for(File file:files)
-					{
-						File newFile=new File(mFilesStack.peek(),file.getName());
-						boolean result=file.renameTo(newFile);
-						if(!result)
-							sbuf.append(file.getAbsolutePath()+"\n");
-					}
-					if(sbuf.length()>0)
-						SimpleToast.makeText(this,sbuf.toString()+"这些文件移动失败");
-				}
-				catch(NoSuchElementException e)
-				{
-					SimpleToast.makeText(this,"还没复制不能粘贴");
-				}
-				flush();
+				moveTo();
 				break;
 		}
 	}
@@ -186,6 +254,10 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		View createView=inflater.inflate(R.layout.layout_create,null);
 		final Dialog dialog=SimpleDialog.show("新建",createView);
 		final EditText etName=(EditText)createView.findViewById(R.id.create_name);
+		//显示软键盘，下面行，
+		InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+		imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
+		dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 		Button bFile=(Button)createView.findViewById(R.id.create_file);
 		Button bFolder=(Button)createView.findViewById(R.id.create_folder);
 		View.OnClickListener listener=new View.OnClickListener(){
@@ -217,7 +289,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 						if(file.mkdirs())
 							Main.this.enter(file);
 						else
-							SimpleToast.makeText(createButton.getContext(),"创新文件"+name+"失败");
+							SimpleToast.makeText(createButton.getContext(),"创新文件夹"+name+"失败");
 						break;
 				}
 				dialog.cancel();
@@ -239,7 +311,10 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 			return;
 		}
 		if(!SimpleDialog.show(this,"确认全部删除?","我只说一次，\n包括文件夹的里的所有文件"))
+		{
+			mAdapter.clearSelection();
 			return;
+		}
 		List<File> deleteErrorFiles=new LinkedList<File>();
 		for(File file:files)
 		{
@@ -342,7 +417,12 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 		LayoutInflater inflater=LayoutInflater.from(this);
 		View view=inflater.inflate(R.layout.layout_openas,null);
 		final Dialog dialog=SimpleDialog.show("打开为",view);
+		//显示软键盘，下面三行，
+		InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+		imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
+		dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 		final EditText edExtension=(EditText)view.findViewById(R.id.openas_extension);
+		edExtension.setText(FileOperator.getExtension(file.getName()));
 		View.OnClickListener listener=new View.OnClickListener(){
 			@Override
 			public void onClick(View view)

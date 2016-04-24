@@ -6,8 +6,33 @@
 *************************************************** */
 package com.aoeiuv020.tool;
 import java.io.*;
+/**
+ * 大多方法都是返回File，
+ * 返回null表示成功，
+ * 其他表示失败，
+ * 返回的File就是失败的那个File,
+ */
 public class FileOperator
 {
+	public static File rename(File file,File newFile)
+	{
+		if(!file.renameTo(newFile))
+		{
+			return file;
+		}
+		return null;
+	}
+	/**
+	 * 重命名，其实就是移动，
+	 * 移动到file上一级下的newFileName,
+	 * @param newFileName 新文件名，可以包含斜杆slash(/)，也就意味着可以直接移动到别的目录去，
+	 */
+	public static File rename(File file,String newFileName)
+	{
+		File parent=getParentFile(file);
+		File newFile=new File(parent,newFileName);
+		return rename(file,newFile);
+	}
 	public static File getParentFile(File file)
 	{
 		File parent=file.getParentFile();

@@ -5,18 +5,18 @@
 	android:layout_height="wrap_content"
 	>
 	<EditText
-		android:id="@+id/openas_extension"
+		android:id="@+id/rename_name"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:singleLine="true"
 		android:selectAllOnFocus="true"
-		android:hint="后辍名"
+		android:singleLine="true"
+		android:hint="新文件名"
 		/>
 	<Button
-		android:id="@+id/openas_open"
+		android:id="@+id/rename_set"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:text="打开"
+		android:text="重命名"
 		/>
 </LinearLayout>
 

@@ -106,8 +106,15 @@ public class SimpleDialog implements DialogInterface.OnClickListener,DialogInter
 	}
 	public static AlertDialog show(String title,View view)
 	{
+		return show(title,view,null);
+	}
+	public static AlertDialog show(String title,View view,Status status)
+	{
 		SimpleDialog simpleDialog=new SimpleDialog();
-		Status status=new Status(simpleDialog);
+		if(status==null)
+			status=new Status(simpleDialog);
+		else
+			status.setSimpleDialog(simpleDialog);
 		return show(title,view,status,simpleDialog);
 	}
 	private static AlertDialog show(String title,View view,Status status,SimpleDialog simpleDialog)
@@ -136,13 +143,9 @@ public class SimpleDialog implements DialogInterface.OnClickListener,DialogInter
 	{
 		SimpleDialog simpleDialog=new SimpleDialog();
 		if(status==null)
-		{
 			status=new Status(simpleDialog);
-		}
 		else
-		{
 			status.setSimpleDialog(simpleDialog);
-		}
 		show(context,title,message,status,simpleDialog);
 	}
 	private static void show(Context context,String title,String message,Status status,SimpleDialog simpleDialog)
