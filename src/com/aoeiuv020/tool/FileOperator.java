@@ -44,13 +44,28 @@ public class FileOperator
 	/**
 	 * 重命名，其实就是移动，
 	 * 移动到file上一级下的newFileName,
-	 * @param newFileName 新文件名，可以包含斜杆slash(/)，也就意味着可以直接移动到别的目录去，
 	 */
-	public static File rename(File file,String newFileName)
+	public static File rename(File file,String name)
 	{
+		if(name==null||name.isEmpty())
+			return file;
 		File parent=getParentFile(file);
-		File newFile=new File(parent,newFileName);
+		File newFile=newFile(parent,name);
 		return rename(file,newFile);
+	}
+	/**
+	 * @param name 新文件名，可以包含斜杆slash(/)，也就意味着可以直接移动到别的目录去，如果'/'开头，就无视参数file，从根目录开始，
+	 */
+	public static File newFile(File dir,String name)
+	{
+		File result=null;
+		if(File.separatorChar==name.charAt(0))
+			result=new File(name);
+		else
+		{
+			result=new File(dir,name);
+		}
+		return result;
 	}
 	public static File getParentFile(File file)
 	{
@@ -154,7 +169,7 @@ public class FileOperator
 	 * 返回失败的文件，
 	 * 目标如果不存在，结果newFile内容等于file,
 	 * 目标如果存在，
-	 *		目标如果是文件夹，结果同copy(file,new File(newFile,file.getName()))
+	 *		目标如果是文件夹，结果同copy(file,newFile(newFile,file.getName()))
 	 *		目标如果不是文件夹，直接读file写进newFile,
 	 * 默认不覆盖，
 	 * 一堆回调函数，挺影响速度的，可以为null,
@@ -174,7 +189,7 @@ public class FileOperator
 		}
 		else if(newFile.isDirectory())
 		{
-			newFile=new File(newFile,file.getName());
+			newFile=newFile(newFile,file.getName());
 		}
 		if(newFile.exists())
 		{
@@ -307,6 +322,9 @@ public class FileOperator
 		public void onDelete(File file,boolean isDeleted);
 		public void onFinished();
 	}
+	/**
+	 * 不需要继承CoverListener,但是看着顺眼，
+	 */
 	public static interface MoveListener extends CoverListener,CopyListener,DeleteListener
 	{
 	}

@@ -177,7 +177,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 			StringBuffer sbuf=new StringBuffer();
 			for(File file:clipperFiles)
 			{
-				File newFile=new File(mFilesStack.peek(),file.getName());
+				File newFile=FileOperator.newFile(mFilesStack.peek(),file.getName());
 				File result=FileOperator.copy(file,newFile);
 				if(result!=null)
 					sbuf.append(result.getAbsolutePath()+"\n");
@@ -199,7 +199,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 			StringBuffer sbuf=new StringBuffer();
 			for(File file:files)
 			{
-				File newFile=new File(mFilesStack.peek(),file.getName());
+				File newFile=FileOperator.newFile(mFilesStack.peek(),file.getName());
 				File result=FileOperator.rename(file,newFile);
 				if(result!=null)
 					sbuf.append(file.getAbsolutePath()+"\n");
@@ -270,7 +270,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 				{
 					case R.id.create_file:
 						Logger.v("new file %s",name);
-						file=new File(Main.this.mFilesStack.peek(),name);
+						file=FileOperator.newFile(Main.this.mFilesStack.peek(),name);
 						try
 						{
 							if(file.createNewFile())
@@ -285,7 +285,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 						break;
 					case R.id.create_folder:
 						Logger.v("new folder %s",name);
-						file=new File(Main.this.mFilesStack.peek(),name);
+						file=FileOperator.newFile(Main.this.mFilesStack.peek(),name);
 						if(file.mkdirs())
 							Main.this.enter(file);
 						else
