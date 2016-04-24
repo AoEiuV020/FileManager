@@ -91,7 +91,9 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 							//只有这一个按钮，
 							case R.id.rename_set:
 								String name=""+edName.getText();
-								FileOperator.rename(file,name);
+								File result=FileOperator.move(file,name);
+								if(result!=null)
+									SimpleToast.makeText(view.getContext(),"重命名失败"+file+","+name);
 								break;
 						}
 						dialog.cancel();
@@ -200,7 +202,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 			for(File file:files)
 			{
 				File newFile=FileOperator.newFile(mFilesStack.peek(),file.getName());
-				File result=FileOperator.rename(file,newFile);
+				File result=FileOperator.move(file,newFile);
 				if(result!=null)
 					sbuf.append(file.getAbsolutePath()+"\n");
 			}

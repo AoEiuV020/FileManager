@@ -14,30 +14,85 @@ import java.io.*;
  */
 public class FileOperator
 {
-	public static File rename(File file,File newFile)
+	public static File move(File file,File newFile)
 	{
-		return rename(file,newFile,null);
+		return move(file,newFile,null);
 	}
-	public static File rename(File file,File newFile,MoveListener listener)
+	/**
+	 * 移动是包含了“重命名”“复制”“删除”,
+	 * 先尝试重命名，失败就改成复制&&删除，
+	 * 返回失败的文件，
+	 * 一堆回调函数，
+	 * @param listener 回调，
+	 */
+	public static File move(File file,File newFile,MoveListener listener)
 	{
 		File result=null;
-		if(newFile.exists())
+		if(!file.exists())
+			result=file;
+		else
 		{
-		}
-		else if(!file.renameTo(newFile))
-		{
-			Logger.v("renameTo false %s",file);
-			result=copy(file,newFile,listener);
+			if(!newFile.exists())
+			{
+				File parent=getParentFile(newFile);
+				if(!parent.exists()&&(listener==null||listener.onCreateParent(parent))&&!parent.mkdirs())
+					result=file;
+			}
 			if(result==null)
 			{
-				result=delete(file,listener);
-				if(result!=null)
+				if(newFile.isDirectory())
 				{
-					Logger.v("delete false %s",file);
+					newFile=newFile(newFile,file.getName());
 				}
+				/*
+				 * 以上处理，结果
+				 * getParentFile(newFile).exists()
+				 */
+				result=_move(file,newFile,listener);
 			}
-			else
-				Logger.v("copy false %s",file);
+		}
+		if(listener!=null)
+			listener.onMoveFinished(result);
+		return result;
+	}
+	/**
+	 * @param file 必然存在，
+	 * @param newFile 可能不存在，
+	 */
+	private static File _move(File file,File newFile,MoveListener listener)
+	{
+		if(newFile.exists())
+		{
+			//默认不覆盖，
+			if(listener==null||!listener.onCover(file,newFile))
+				return null;
+			if(file.isDirectory()!=newFile.isDirectory())
+				return file;
+		}
+		File result=null;
+		if(newFile.isDirectory())
+		{
+			File[] subFiles=file.listFiles();
+			if(subFiles!=null)
+				for(File f:subFiles)
+				{
+					result=_move(f,newFile(newFile,f.getName()),listener);
+					if(result!=null)
+						return result;
+				}
+			//完事了删除空目录，按理说是空的，&&result==null,
+			result=delete(file,listener);
+			//return,
+		}
+		else
+		{
+			//newFile.isFile()||!newFile.exists()
+			if(file.renameTo(newFile))
+				return null;
+			result=copy(file,newFile,listener);
+			if(result==null)
+				result=delete(file,listener);
+			//return,
 		}
 		return result;
 	}
@@ -45,13 +100,13 @@ public class FileOperator
 	 * 重命名，其实就是移动，
 	 * 移动到file上一级下的newFileName,
 	 */
-	public static File rename(File file,String name)
+	public static File move(File file,String name)
 	{
 		if(name==null||name.isEmpty())
 			return file;
 		File parent=getParentFile(file);
 		File newFile=newFile(parent,name);
-		return rename(file,newFile);
+		return move(file,newFile);
 	}
 	/**
 	 * @param name 新文件名，可以包含斜杆slash(/)，也就意味着可以直接移动到别的目录去，如果'/'开头，就无视参数file，从根目录开始，
@@ -143,21 +198,31 @@ public class FileOperator
 	}
 	public static File delete(File file,DeleteListener listener)
 	{
+		File result=null;
+		if(!file.exists())
+			result=file;
+		else
+		{
+			result=_delete(file,listener);
+		}
+		if(listener!=null)
+			listener.onDeleteFinished(result);
+		return result;
+	}
+	public static File _delete(File file,DeleteListener listener)
+	{
 		if(file.isDirectory())
 		{
 			File[] subFiles=file.listFiles();
 			if(subFiles!=null)
 				for(File f:subFiles)
 				{
-					File result=delete(f,listener);
+					File result=_delete(f,listener);
 					if(result!=null)
 						return result;
 				}
 		}
-		boolean isDeleted=file.delete();
-		if(listener!=null)
-			listener.onDelete(file,isDeleted);
-		if(!isDeleted)
+		if((listener==null||listener.onDelete(file))&&!file.delete())
 			return file;
 		return null;
 	}
@@ -177,25 +242,47 @@ public class FileOperator
 	 */
 	public static File copy(File file,File newFile,CopyListener listener)
 	{
+		File result=null;
 		if(!file.exists()||!file.canRead())
-			return file;
-		if(file.isDirectory()&&newFile.isFile())
-			return file;
-		if(!newFile.exists())
+			result=file;
+		else
 		{
-			File parent=getParentFile(newFile);
-			if(!parent.exists()&&!parent.mkdirs())
-				return file;
+			if(!newFile.exists())
+			{
+				File parent=getParentFile(newFile);
+				if(!parent.exists()&&(listener==null||listener.onCreateParent(parent))&&!parent.mkdirs())
+					result=file;
+			}
+			if(result==null)
+			{
+				if(newFile.isDirectory())
+				{
+					newFile=newFile(newFile,file.getName());
+				}
+				/*
+				 * 以上处理，结果
+				 * getParentFile(newFile).exists()
+				 */
+				result=_copy(file,newFile,listener);
+			}
 		}
-		else if(newFile.isDirectory())
-		{
-			newFile=newFile(newFile,file.getName());
-		}
+		if(listener!=null)
+			listener.onCopyFinished(result);
+		return result;
+	}
+	/**
+	 * @param file 必然存在，
+	 * @param newFile 可能不存在，
+	 */
+	private static File _copy(File file,File newFile,CopyListener listener)
+	{
 		if(newFile.exists())
 		{
 			//默认不覆盖，
 			if(listener==null||!listener.onCover(file,newFile))
 				return null;
+			if(file.isDirectory()!=newFile.isDirectory())
+				return file;
 		}
 		else
 		{
@@ -207,9 +294,7 @@ public class FileOperator
 						throw new IOException("创建文件夹失败");
 				}
 				else
-				{
 					newFile.createNewFile();
-				}
 			}
 			catch(IOException e)
 			{
@@ -237,7 +322,7 @@ public class FileOperator
 			if(subFiles!=null)
 				for(File f:subFiles)
 				{
-					File result=copy(f,newFile,listener);
+					File result=_copy(f,newFile(newFile,f.getName()),listener);
 					if(result!=null)
 						return result;
 				}
@@ -304,6 +389,13 @@ public class FileOperator
 		}
 		return result;
 	}
+	/**
+	 * 目标不存在时，是否创建目标的上级目录然后继续，
+	 */
+	public static interface CreateParentListener
+	{
+		public boolean onCreateParent(File file);
+	}
 	public static interface CoverListener
 	{
 		public boolean onCover(File file,File newFile);
@@ -312,20 +404,26 @@ public class FileOperator
 	{
 		public void onCopy(InputStream input,OutputStream output,byte[] buf,int bufSize,int len);
 	}
-	public static interface CopyListener extends CoverListener,CopyStreamProgressListener
+	public static interface CopyListener extends CreateParentListener,CoverListener,CopyStreamProgressListener
 	{
 		public void onCopy(File file,File newFile);
-		public void onFinished();
+		public void onCopyFinished(File result);
 	}
 	public static interface DeleteListener
 	{
-		public void onDelete(File file,boolean isDeleted);
-		public void onFinished();
+		/**
+		 * 询问是否删除，
+		 */
+		public boolean onDelete(File file);
+		public void onDeleteFinished(File result);
 	}
 	/**
-	 * 不需要继承CoverListener,但是看着顺眼，
+	 * 还继承CoverListener,CreateParentListener
+	 * 但不需要写出来，因为CopyListener继承了，
 	 */
-	public static interface MoveListener extends CoverListener,CopyListener,DeleteListener
+	public static interface MoveListener extends CopyListener,DeleteListener
 	{
+		public boolean onRename(File file,File newFile);
+		public void onMoveFinished(File result);
 	}
 }
