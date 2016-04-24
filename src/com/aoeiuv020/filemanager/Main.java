@@ -178,7 +178,7 @@ public class Main extends Activity implements AdapterView.OnItemClickListener,Vi
 			for(File file:clipperFiles)
 			{
 				File newFile=new File(mFilesStack.peek(),file.getName());
-				File result=FileOperator.copy(file,newFile,null);
+				File result=FileOperator.copy(file,newFile);
 				if(result!=null)
 					sbuf.append(result.getAbsolutePath()+"\n");
 			}

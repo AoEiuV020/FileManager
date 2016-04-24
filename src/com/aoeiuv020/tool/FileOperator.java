@@ -16,11 +16,30 @@ public class FileOperator
 {
 	public static File rename(File file,File newFile)
 	{
-		if(!file.renameTo(newFile))
+		return rename(file,newFile,null);
+	}
+	public static File rename(File file,File newFile,MoveListener listener)
+	{
+		File result=null;
+		if(newFile.exists())
 		{
-			return file;
 		}
-		return null;
+		else if(!file.renameTo(newFile))
+		{
+			Logger.v("renameTo false %s",file);
+			result=copy(file,newFile,listener);
+			if(result==null)
+			{
+				result=delete(file,listener);
+				if(result!=null)
+				{
+					Logger.v("delete false %s",file);
+				}
+			}
+			else
+				Logger.v("copy false %s",file);
+		}
+		return result;
 	}
 	/**
 	 * 重命名，其实就是移动，
@@ -103,6 +122,10 @@ public class FileOperator
 		}
 		return sbuf.toString();
 	}
+	public static File delete(File file)
+	{
+		return delete(file,null);
+	}
 	public static File delete(File file,DeleteListener listener)
 	{
 		if(file.isDirectory())
@@ -123,9 +146,9 @@ public class FileOperator
 			return file;
 		return null;
 	}
-	public static File copy(File file,File newFile,CopyListener listener)
+	public static File copy(File file,File newFile)
 	{
-		return copy(file,newFile,listener,listener,listener);
+		return copy(file,newFile,null);
 	}
 	/**
 	 * 返回失败的文件，
@@ -135,11 +158,9 @@ public class FileOperator
 	 *		目标如果不是文件夹，直接读file写进newFile,
 	 * 默认不覆盖，
 	 * 一堆回调函数，挺影响速度的，可以为null,
-	 * @param coverListener 覆盖时询问是否覆盖，
-	 * @param fileListener 复制每一个文件(包括文件夹)时通知一次，
-	 * @param streamListener 复制每一个文件过程中，每复制一个bufSize(介于 1K ~ 2M 分8次)通知一次，
+	 * @param listener onCover()覆盖时询问是否覆盖，onCopy(File,File)复制每一个文件(包括文件夹)时通知一次，onCopy(InputStream input,OutputStream output,byte[] buf,int bufSize,int len) 复制每一个文件过程中，每复制一个bufSize(介于 1K ~ 2M 分8次)通知一次，
 	 */
-	public static File copy(File file,File newFile,CoverListener coverListener,CopyFileProgressListener fileListener,CopyStreamProgressListener streamListener)
+	public static File copy(File file,File newFile,CopyListener listener)
 	{
 		if(!file.exists()||!file.canRead())
 			return file;
@@ -158,7 +179,7 @@ public class FileOperator
 		if(newFile.exists())
 		{
 			//默认不覆盖，
-			if(coverListener==null||!coverListener.onCover(file,newFile))
+			if(listener==null||!listener.onCover(file,newFile))
 				return null;
 		}
 		else
@@ -192,8 +213,8 @@ public class FileOperator
 		 *	&&file.isDirectory()==newFile.isDirectory();
 		 * 以下是复制，
 		 */
-		if(fileListener!=null)
-			fileListener.onCopy(file,newFile);
+		if(listener!=null)
+			listener.onCopy(file,newFile);
 		if(file.isDirectory())
 		{
 			//file.isDirectory()&&newFile.isDirectory()
@@ -201,7 +222,7 @@ public class FileOperator
 			if(subFiles!=null)
 				for(File f:subFiles)
 				{
-					File result=copy(f,newFile,coverListener,fileListener,streamListener);
+					File result=copy(f,newFile,listener);
 					if(result!=null)
 						return result;
 				}
@@ -222,8 +243,8 @@ public class FileOperator
 					bufSize=1*1024;
 				InputStream input=new FileInputStream(file);
 				OutputStream output=new FileOutputStream(newFile);
-				long len=copy(input,output,bufSize,streamListener);
-				if(len==0)
+				Long len=copy(input,output,bufSize,listener);
+				if(len==null)
 					return file;
 				input.close();
 				output.close();
@@ -242,11 +263,11 @@ public class FileOperator
 		return null;
 	}
 	/**
-	 * 返回0表示失败，
+	 * @return 返回null表示失败，其他表示文件长度，
 	 */
-	private static long copy(InputStream input,OutputStream output,int bufSize,CopyStreamProgressListener listener)
+	private static Long copy(InputStream input,OutputStream output,int bufSize,CopyStreamProgressListener listener)
 	{
-		long result=0;
+		Long result=(long)0;
 		byte[] buf=new byte[bufSize];
 		try
 		{
@@ -264,7 +285,7 @@ public class FileOperator
 		catch(IOException e)
 		{
 			//空间满了或者没权限返回失败，
-			result=0;
+			result=null;
 		}
 		return result;
 	}
@@ -272,21 +293,21 @@ public class FileOperator
 	{
 		public boolean onCover(File file,File newFile);
 	}
-	public static interface CopyFileProgressListener
-	{
-		public void onCopy(File file,File newFile);
-		public void onFinished();
-	}
 	public static interface CopyStreamProgressListener
 	{
 		public void onCopy(InputStream input,OutputStream output,byte[] buf,int bufSize,int len);
 	}
-	public static interface CopyListener extends CoverListener,CopyFileProgressListener,CopyStreamProgressListener
+	public static interface CopyListener extends CoverListener,CopyStreamProgressListener
 	{
+		public void onCopy(File file,File newFile);
+		public void onFinished();
 	}
 	public static interface DeleteListener
 	{
 		public void onDelete(File file,boolean isDeleted);
 		public void onFinished();
+	}
+	public static interface MoveListener extends CoverListener,CopyListener,DeleteListener
+	{
 	}
 }
